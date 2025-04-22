@@ -12,8 +12,8 @@ export class PawnMovable implements Movable {
         return to.x >=0 && to.x<8 && to.y>=0 && to.y<8 && ((from.x + 1 == to.x && color==="w") || (from.x - 1 == to.x && color==="b"))
     }
     giveValidCoords(currentCoords: Coords, color : string): { x: number; y: number }[] {
-        if (color === "w" && currentCoords.x + 1<8) return [{x : currentCoords.x + 1, y : currentCoords.y}]
-        if (color === "b" && currentCoords.x - 1>=0) return [{x : currentCoords.x-1, y : currentCoords.y}]
+        if (color === "b" && currentCoords.x + 1<8) return [{x : currentCoords.x + 1, y : currentCoords.y}]
+        if (color === "w" && currentCoords.x - 1>=0) return [{x : currentCoords.x-1, y : currentCoords.y}]
         return []
     }
 }

@@ -53,7 +53,6 @@ export class Gameboard {
         }
     }
 
-
     getCell (coords : Coords) {
         let result;
         for (let cell of this.grid) {
@@ -66,21 +65,16 @@ export class Gameboard {
         return result!
     }
 
+    getCurrentTurn () {
+        return this.currentTurn;
+    }
+
     printBoard() {
         for (let x = 0; x < 8; x++) {
             let rowStr = "";
             for (let y = 0; y < 8; y++) {
                 const cell = this.getCell({ x, y });
                 const symbol = cell!.getPiece()?.symbol || "--";
-                rowStr += symbol + " ";
-            }
-            console.log(rowStr.trim());
-        }
-        for (let x = 0; x < 8; x++) {
-            let rowStr = "";
-            for (let y = 0; y < 8; y++) {
-                const cell = this.getCell({ x, y });
-                const symbol = cell!.getColor();
                 rowStr += symbol + " ";
             }
             console.log(rowStr.trim());
@@ -148,7 +142,7 @@ export class Gameboard {
     }
 
     isCheckMate() {
-        const color = this.currentTurn === "b" ? "w" : "b";
+        const color = this.currentTurn ;
         if (!this.isCheck(color)) return false;
 
         const directions = [
@@ -227,6 +221,33 @@ export class Gameboard {
         return true; // no valid moves => checkmate
     }
 
+    move(from: Coords, to: Coords) {
+        const fromCell = this.getCell(from);
+        const toCell = this.getCell(to);
+        const piece = fromCell.getPiece();
+        const targetPiece = toCell.getPiece();
+
+        if (!piece) return false;
+        const validPositions = piece.giveDirections(from);
+        console.log(validPositions);
+        const isValid = validPositions.some(pos => pos.x === to.x && pos.y === to.y);
+        if (!isValid) return false;
+
+        if (targetPiece?.color === piece.color) return false;
 
 
+        fromCell.setPiece(null);
+        toCell.setPiece(piece);
+
+        const isKingInCheck = this.isCheck(piece.color);
+
+        if (isKingInCheck) {
+            toCell.setPiece(targetPiece);
+            fromCell.setPiece(piece);
+            return false;
+        }
+        if (this.currentTurn==="b") this.currentTurn = "w";
+        else this.currentTurn = "b";
+        return true;
+    }
 }

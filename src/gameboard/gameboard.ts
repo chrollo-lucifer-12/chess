@@ -7,10 +7,12 @@ export class Gameboard {
 
     private grid : GameBoardCell[] = [];
     private currentTurn : "b" | "w"
+    private previousMoves : {from : Coords, to : Coords, piece : ChessPiece}[] = []
 
     constructor() {
         this.setUpBoard();
         this.printBoard()
+        this.previousMoves = []
         this.currentTurn = "w"
     }
 
@@ -51,6 +53,27 @@ export class Gameboard {
                 this.grid.push(new GameBoardCell(color, {x,y}, null))
             }
         }
+    }
+
+    setUpBoardManually(previousMoves: { from: Coords; to: Coords; piece: ChessPiece }[]) {
+        // Clear the board
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                this.getCell({ x: row, y: col }).setPiece(null);
+            }
+        }
+
+        // Place all moved pieces based on final positions
+        previousMoves.forEach(({ to, piece }) => {
+            const toCell = this.getCell(to);
+            toCell.setPiece(piece);
+        });
+
+        // Save the history
+        this.previousMoves = previousMoves;
+
+        // Optionally set turn based on move history
+        this.currentTurn = previousMoves.length % 2 === 0 ? "w" : "b";
     }
 
     getCell (coords : Coords) {
@@ -227,9 +250,58 @@ export class Gameboard {
         const piece = fromCell.getPiece();
         const targetPiece = toCell.getPiece();
 
+        console.log(piece);
+
         if (!piece) return false;
+
+        if (piece.symbol[1] === "p") {
+            if (this.currentTurn === "w") {
+                if (from.x - 2 === to.x && from.y===to.y && !targetPiece && fromCell.getCoords().x===6) {
+                    fromCell.setPiece(null);
+                    toCell.setPiece(piece);
+                    this.previousMoves.push({from,to,piece})
+                    return true;
+                }
+                if (from.x-1 === to.x && from.y===to.y && !targetPiece) {
+                    fromCell.setPiece(null);
+                    toCell.setPiece(piece);
+                    this.previousMoves.push({from,to,piece})
+                    return true;
+                }
+                  if (from.x-1===to.x && (from.y-1===to.y || from.y+1===to.y) && targetPiece) {
+                    this.previousMoves.push({from,to,piece})
+                    fromCell.setPiece(null);
+                    toCell.setPiece(piece);
+                    return true;
+                }
+            }
+            else if (this.currentTurn === "b") {
+                if (from.x + 2 === to.x && from.y===to.y && !targetPiece && fromCell.getCoords().x===1) {
+                    fromCell.setPiece(null);
+                    toCell.setPiece(piece);
+                    this.previousMoves.push({from,to,piece})
+                    return true;
+                }
+                if (from.x + 1 === to.x && from.y === to.y && !targetPiece) {
+                    fromCell.setPiece(null);
+                    toCell.setPiece(piece);
+                    this.previousMoves.push({from,to,piece})
+                    return true;
+                }
+                if (from.x+1===to.x && (from.y+1===to.y || from.y-1===to.y) && targetPiece) {
+                    this.previousMoves.push({from,to,piece})
+                    fromCell.setPiece(null);
+                    toCell.setPiece(piece);
+                    return true;
+                }
+            }
+            console.log("wrong move")
+            return false;
+        }
+
         const validPositions = piece.giveDirections(from);
-        console.log(validPositions);
+        //   console.log(validPositions);
+
         const isValid = validPositions.some(pos => pos.x === to.x && pos.y === to.y);
         if (!isValid) return false;
 
@@ -248,6 +320,9 @@ export class Gameboard {
         }
         if (this.currentTurn==="b") this.currentTurn = "w";
         else this.currentTurn = "b";
+
+        this.previousMoves.push({from,to,piece})
+
         return true;
     }
 }

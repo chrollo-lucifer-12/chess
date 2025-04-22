@@ -55,12 +55,15 @@ export class Gameboard {
 
 
     getCell (coords : Coords) {
+        let result;
         for (let cell of this.grid) {
             const cellCoords = cell.getCoords()
             if (cellCoords.x === coords.x && cellCoords.y === coords.y) {
-                return cell;
+                result = cell;
+                break
             }
         }
+        return result!
     }
 
     printBoard() {
@@ -147,62 +150,83 @@ export class Gameboard {
     isCheckMate() {
         const color = this.currentTurn === "b" ? "w" : "b";
         if (!this.isCheck(color)) return false;
-        const directions = [[1,1], [1,0] , [1,-1], [-1,0], [-1,-1], [-1,1], [0,1],[0,-1]];
-        let kingCell : GameBoardCell;
-        for (let x=0; x<8; x++) {
-            for (let y=0; y<8; y++) {
-                if (this.getCell({x,y})?.getPiece()?.symbol === `${color}k`) {
-                    kingCell = this.getCell({x,y})!;
-                }
-            }
-        }
-        let kCoords = kingCell!.getCoords();
-        let kPiece = kingCell!.getPiece()
-        for (let d of directions) {
-            let xx = kCoords.x + d[0], yy = kCoords.y + d[1];
-            let newCell = this.getCell({x : xx, y : yy})!
-            if (kPiece?.canMove({x : kCoords.x, y : kCoords.y}, {x : xx, y : yy}) && newCell.getPiece() === null) {
-                // move king to newCell
-                kingCell!.setPiece(null);
-                newCell.setPiece(new King(`${color}`, `${color}k`))
-                if (!this.isCheck(color)) {
-                    newCell.setPiece(null);
-                    kingCell!.setPiece(new King(`${color}`, `${color}k`))
-                    return false;
-                }
-                newCell.setPiece(null);
-                kingCell!.setPiece(new King(`${color}`, `${color}k`))
-            }
-        }
-        for (let x=0; x<8; x++) {
-            for (let y=0; y<8; y++) {
-                let cell = this.getCell({x,y});
-                if (cell!.getPiece() && cell!.getPiece()?.color === color) {
-                    let piece = cell!.getPiece();
-                    if (!piece) continue
 
+        const directions = [
+            [1, 1], [1, 0], [1, -1],
+            [-1, 0], [-1, -1], [-1, 1],
+            [0, 1], [0, -1]
+        ];
+
+        let kingCell: GameBoardCell | undefined;
+        for (let x = 0; x < 8; x++) {
+            for (let y = 0; y < 8; y++) {
+                const piece = this.getCell({x, y})?.getPiece();
+                if (piece?.symbol === `${color}k`) {
+                    kingCell = this.getCell({x, y});
+                    break;
                 }
             }
         }
-        return true;
+
+        if (!kingCell) return false;
+        const kCoords = kingCell.getCoords();
+        const kPiece = kingCell.getPiece();
+
+        for (let [dx, dy] of directions) {
+            const xx = kCoords.x + dx;
+            const yy = kCoords.y + dy;
+
+            if (xx < 0 || xx >= 8 || yy < 0 || yy >= 8) continue;
+
+            const newCell = this.getCell({x: xx, y: yy});
+            const targetPiece = newCell?.getPiece();
+
+            if (
+                kPiece?.canMove(kCoords, {x: xx, y: yy}) &&
+                (!targetPiece || targetPiece.color !== color)
+            ) {
+                // simulate move
+                kingCell.setPiece(null);
+                newCell.setPiece(new King(color, `${color}k`));
+
+                const stillInCheck = this.isCheck(color);
+
+                // revert move
+                newCell.setPiece(targetPiece);
+                kingCell.setPiece(kPiece);
+
+                if (!stillInCheck) return false;
+            }
+        }
+
+        // Try moving other pieces
+        for (let x = 0; x < 8; x++) {
+            for (let y = 0; y < 8; y++) {
+                const fromCell = this.getCell({x, y});
+                const piece = fromCell?.getPiece();
+                if (!piece || piece.color !== color) continue;
+
+                const possibleMoves = piece.giveDirections({x, y});
+                for (let coords of possibleMoves) {
+                    const toCell = this.getCell(coords);
+                    if (!toCell) continue;
+                    const target = toCell.getPiece();
+                    if (target && target.color === color) continue;
+                    if (!piece.canMove({x, y}, coords)) continue;
+                    fromCell.setPiece(null);
+                    toCell.setPiece(piece);
+                    const stillInCheck = this.isCheck(color);
+                    toCell.setPiece(target);
+                    fromCell.setPiece(piece);
+
+                    if (!stillInCheck) return false;
+                }
+            }
+        }
+
+        return true; // no valid moves => checkmate
     }
 
-    // move (from : Coords, to : Coords, pieceSymbol : string) {
-    //     if (this.currentTurn !== pieceSymbol[0]) {
-    //         console.log("invalid move")
-    //         return;
-    //     }
-    //     let currentcell : GameBoardCell;
-    //     for (let cell of this.grid) {
-    //         if (cell.getCoords().x === from.x && cell.getCoords().y === from.y) {
-    //             currentcell = cell;
-    //             break
-    //         }
-    //     }
-    //     if (currentcell.) {
-    //         console.log("invalid move")
-    //         return;
-    //     }
-    //
-    // }
+
+
 }

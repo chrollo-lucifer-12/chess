@@ -8,6 +8,9 @@ export class ChessPiece {
     canMove (from : Coords, to : Coords) : boolean {
         return this.strategy.isValidMove(from,to)
     }
+    giveDirections(currentCoords : Coords) {
+        return this.strategy.giveValidCoords(currentCoords, this.color)
+    }
     getColor () {
         return this.color
     }

@@ -146,6 +146,7 @@ export class Gameboard {
 
     isCheckMate() {
         const color = this.currentTurn === "b" ? "w" : "b";
+        if (!this.isCheck(color)) return false;
         const directions = [[1,1], [1,0] , [1,-1], [-1,0], [-1,-1], [-1,1], [0,1],[0,-1]];
         let kingCell : GameBoardCell;
         for (let x=0; x<8; x++) {
@@ -171,6 +172,16 @@ export class Gameboard {
                 }
                 newCell.setPiece(null);
                 kingCell!.setPiece(new King(`${color}`, `${color}k`))
+            }
+        }
+        for (let x=0; x<8; x++) {
+            for (let y=0; y<8; y++) {
+                let cell = this.getCell({x,y});
+                if (cell!.getPiece() && cell!.getPiece()?.color === color) {
+                    let piece = cell!.getPiece();
+                    if (!piece) continue
+
+                }
             }
         }
         return true;

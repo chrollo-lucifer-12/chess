@@ -33,7 +33,7 @@ export class Rook extends ChessPiece {
 
 export class Knight extends ChessPiece {
     constructor(color : "b" | "w", symbol : string) {
-        super(color, symbol, new KingMovable());
+        super(color, symbol, new KnightMovable());
     }
 }
 

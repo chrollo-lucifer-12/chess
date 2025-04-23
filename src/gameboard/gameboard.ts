@@ -1,7 +1,6 @@
 import {Bishop, ChessPiece, King, Knight, Pawn, Queen, Rook} from "./piece";
 import {GameBoardCell} from "./gameboarcell";
 import {Coords} from "../types";
-import {KingMovable} from "./move";
 
 export class Gameboard {
 
@@ -128,18 +127,46 @@ export class Gameboard {
                     case `${oppositeColor}p`: {
                         const dx = oppositeColor === "b" ? 1 : -1;
                         if ((cx + dx === kx) && (cy + 1 === ky || cy - 1 === ky)) {
+
                             return true;
                         }
                         break;
                     }
 
                     case `${oppositeColor}r`: {
-                        if (cx === kx || cy === ky) return true;
+                        if (cx === kx || cy === ky) {
+                            let stepX = 0, stepY = 0;
+                            if (cx === kx) stepY = cy < ky ? 1 : -1;
+                            if (cy === ky) stepX = cx < kx ? 1 : -1;
+
+                            let xCheck = cx + stepX, yCheck = cy + stepY;
+                            while (xCheck !== kx || yCheck !== ky) {
+                                if (this.getCell({ x: xCheck, y: yCheck })?.getPiece()) {
+                                    return false; // Obstruction found
+                                }
+                                xCheck += stepX;
+                                yCheck += stepY;
+                            }
+                            return true;
+                        }
                         break;
                     }
 
                     case `${oppositeColor}b`: {
-                        if (Math.abs(cx - kx) === Math.abs(cy - ky)) return true;
+                        if (Math.abs(cx - kx) === Math.abs(cy - ky)) {
+                            let stepX = cx < kx ? 1 : -1;
+                            let stepY = cy < ky ? 1 : -1;
+
+                            let xCheck = cx + stepX, yCheck = cy + stepY;
+                            while (xCheck !== kx || yCheck !== ky) {
+                                if (this.getCell({ x: xCheck, y: yCheck })?.getPiece()) {
+                                    return false; // Obstruction found
+                                }
+                                xCheck += stepX;
+                                yCheck += stepY;
+                            }
+                            return true;
+                        }
                         break;
                     }
 
@@ -155,7 +182,25 @@ export class Gameboard {
                             Math.abs(cx - kx) === Math.abs(cy - ky) ||
                             cx === kx ||
                             cy === ky
-                        ) return true;
+                        )  {
+                            let stepX = 0, stepY = 0;
+                            if (cx === kx) stepY = cy < ky ? 1 : -1;
+                            if (cy === ky) stepX = cx < kx ? 1 : -1;
+                            if (Math.abs(cx - kx) === Math.abs(cy - ky)) {
+                                stepX = cx < kx ? 1 : -1;
+                                stepY = cy < ky ? 1 : -1;
+                            }
+
+                            let xCheck = cx + stepX, yCheck = cy + stepY;
+                            while (xCheck !== kx || yCheck !== ky) {
+                                if (this.getCell({ x: xCheck, y: yCheck })?.getPiece()) {
+                                    return false; // Obstruction found
+                                }
+                                xCheck += stepX;
+                                yCheck += stepY;
+                            }
+                            return true;
+                        }
                         break;
                     }
                 }
@@ -246,12 +291,16 @@ export class Gameboard {
 
 
     checkKingSideCastling (fromCell : GameBoardCell , toCell: GameBoardCell, piece: ChessPiece, targetPiece : ChessPiece) {
+    //    console.log("king castle");
         let newCell1, newCell2;
         let x = 7;
         if (this.currentTurn === "b") x = 0;
         newCell1 = this.getCell({x, y: 5});
         newCell2 = this.getCell({x, y: 6});
-        if (newCell1.getPiece() !== null || newCell2.getPiece()!== null) return false;
+        if (newCell1.getPiece() !== null || newCell2.getPiece()!== null) {
+    //        console.log("something betwwen king and rook")
+            return false;
+        }
         fromCell.setPiece(null);
         toCell.setPiece(null);
         newCell1.setPiece(piece);
@@ -261,6 +310,7 @@ export class Gameboard {
             newCell2.setPiece(null);
             fromCell.setPiece(piece);
             toCell.setPiece(targetPiece);
+        //    console.log("king will be in check")
             return false;
         }
         return true;
@@ -288,6 +338,107 @@ export class Gameboard {
         return true;
     }
 
+
+    checkObstruction(fromCell: GameBoardCell, toCell: GameBoardCell): boolean {
+        const fromCoords = fromCell.getCoords();
+        const toCoords = toCell.getCoords();
+        const piece = fromCell.getPiece();
+
+        if (!piece) return false;
+
+
+        switch (piece.symbol[1]) {
+            case "r": {
+                if (fromCoords.x === toCoords.x) {
+
+                    const step = fromCoords.y < toCoords.y ? 1 : -1;
+                    for (let y = fromCoords.y + step; y !== toCoords.y; y += step) {
+                        if (this.getCell({ x: fromCoords.x, y })?.getPiece()) {
+                            return true;
+                        }
+                    }
+                } else if (fromCoords.y === toCoords.y) {
+
+                    const step = fromCoords.x < toCoords.x ? 1 : -1;
+                    for (let x = fromCoords.x + step; x !== toCoords.x; x += step) {
+                        if (this.getCell({ x, y: fromCoords.y })?.getPiece()) {
+                            return true; // Obstruction found
+                        }
+                    }
+                }
+                break;
+            }
+
+            case "b": {
+                const dx = Math.abs(fromCoords.x - toCoords.x);
+                const dy = Math.abs(fromCoords.y - toCoords.y);
+                if (dx === dy) { // Diagonal movement
+                    const stepX = fromCoords.x < toCoords.x ? 1 : -1;
+                    const stepY = fromCoords.y < toCoords.y ? 1 : -1;
+
+                    let x = fromCoords.x + stepX;
+                    let y = fromCoords.y + stepY;
+                    while (x !== toCoords.x && y !== toCoords.y) {
+                        if (this.getCell({ x, y })?.getPiece()) {
+                            return true; // Obstruction found
+                        }
+                        x += stepX;
+                        y += stepY;
+                    }
+                }
+                break;
+            }
+
+            case "q": {
+                if (fromCoords.x === toCoords.x) {
+                    const step = fromCoords.y < toCoords.y ? 1 : -1;
+                    for (let y = fromCoords.y + step; y !== toCoords.y; y += step) {
+                        if (this.getCell({ x: fromCoords.x, y })?.getPiece()) {
+                            return true; // Obstruction found
+                        }
+                    }
+                } else if (fromCoords.y === toCoords.y) {
+                    const step = fromCoords.x < toCoords.x ? 1 : -1;
+                    for (let x = fromCoords.x + step; x !== toCoords.x; x += step) {
+                        if (this.getCell({ x, y: fromCoords.y })?.getPiece()) {
+                            return true; // Obstruction found
+                        }
+                    }
+                }
+
+                // Check for diagonal (like bishop)
+                const dx = Math.abs(fromCoords.x - toCoords.x);
+                const dy = Math.abs(fromCoords.y - toCoords.y);
+                if (dx === dy) {
+                    const stepX = fromCoords.x < toCoords.x ? 1 : -1;
+                    const stepY = fromCoords.y < toCoords.y ? 1 : -1;
+
+                    let x = fromCoords.x + stepX;
+                    let y = fromCoords.y + stepY;
+                    while (x !== toCoords.x && y !== toCoords.y) {
+                        if (this.getCell({ x, y })?.getPiece()) {
+                            return true; // Obstruction found
+                        }
+                        x += stepX;
+                        y += stepY;
+                    }
+                }
+                break;
+            }
+
+            case "k": {
+                // King moves one square at a time, no obstructions to check
+                return false;
+            }
+
+            default:
+                return false;
+        }
+
+        return false; // No obstruction found
+    }
+
+
     move(from: Coords, to: Coords) {
         const fromCell = this.getCell(from);
         const toCell = this.getCell(to);
@@ -299,13 +450,13 @@ export class Gameboard {
 
         if (!piece) return false;
 
-        if (piece.symbol === `${this.currentTurn}r` && targetPiece && targetPiece.symbol[1] === `${this.currentTurn}k`) {
+        if (piece.symbol === `${this.currentTurn}r` && targetPiece && targetPiece.symbol === `${this.currentTurn}k`) {
             for (let move of this.previousMoves) {
                 if (move.piece === piece || move.piece === targetPiece) {
                     return false;
                 }
             }
-            if (this.isCheck(this.currentTurn)) return false;
+            if (this.isCheck(this.currentTurn)) {  return false;}
             let res;
             if (this.currentTurn === "w") {
 
@@ -380,23 +531,30 @@ export class Gameboard {
                     return true;
                 }
             }
-            console.log("wrong move")
+        //    console.log("wrong move")
             return false;
         }
 
         const validPositions = piece.giveDirections(from);
-        //   console.log(validPositions);
+        console.log(validPositions);
 
         const isValid = validPositions.some(pos => pos.x === to.x && pos.y === to.y);
-        if (!isValid) return false;
+        if (!isValid) {
+         //   console.log("obstruction for", piece.symbol)
+            return false;
+        }
 
         if (targetPiece?.color === piece.color) return false;
+
+    // if (this.checkObstruction(fromCell,toCell)) {
+    //     return false;
+    // }
 
 
         fromCell.setPiece(null);
         toCell.setPiece(piece);
 
-        const isKingInCheck = this.isCheck(piece.color);
+        const isKingInCheck = this.isCheck(this.currentTurn);
 
         if (isKingInCheck) {
             toCell.setPiece(targetPiece);

@@ -36,63 +36,113 @@ export class RookMovable implements Movable {
 
 export class KnightMovable implements Movable {
     isValidMove(from: Coords, to: Coords): boolean {
-        let dx = Math.abs(from.x - to.x), dy = Math.abs(from.y - to.y);
-        return ((dx==2 && dy==1) || (dx==1 || dy==2)) && to.x>=0 && to.x<=7
+        const dx = Math.abs(from.x - to.x);
+        const dy = Math.abs(from.y - to.y);
+        return ((dx === 2 && dy === 1) || (dx === 1 && dy === 2)) &&
+            to.x >= 0 && to.x < 8 && to.y >= 0 && to.y < 8;
     }
+
     giveValidCoords(currentCoords: Coords): { x: number; y: number }[] {
-        let res : {x : number, y: number}[] = [];
-        let dx = [1,-1]
-        let dy = [2,-2];
-        for (let x1 of dx) {
-            for (let x2 of dy) {
-                let xx = currentCoords.x + x1, yy = currentCoords.y + x2;
-                if (xx>=0 && xx<8 && yy>=0 && yy<8) {
-                    res.push({x : xx, y : yy})
-                }
+        const res: { x: number; y: number }[] = [];
+        const moves = [
+            { dx: 2, dy: 1 }, { dx: 2, dy: -1 },
+            { dx: -2, dy: 1 }, { dx: -2, dy: -1 },
+            { dx: 1, dy: 2 }, { dx: 1, dy: -2 },
+            { dx: -1, dy: 2 }, { dx: -1, dy: -2 }
+        ];
+
+        for (const { dx, dy } of moves) {
+            const x = currentCoords.x + dx;
+            const y = currentCoords.y + dy;
+            if (x >= 0 && x < 8 && y >= 0 && y < 8) {
+                res.push({ x, y });
             }
         }
         return res;
     }
 }
+
 
 export class BishopMovable implements Movable {
     isValidMove(from: Coords, to: Coords): boolean {
         const dx = Math.abs(from.x - to.x);
         const dy = Math.abs(from.y - to.y);
-        return dx === dy && to.x>=0 && to.x<=7;
+        return dx === dy && to.x >= 0 && to.x <= 7 && to.y >= 0 && to.y <= 7;
     }
+
     giveValidCoords(currentCoords: Coords): { x: number; y: number }[] {
-        let res : {x : number, y: number}[] = [];
-        for (let x=-8; x<=8; x++) {
-            if (currentCoords.x + x >=0 && currentCoords.y + x >= 0 && currentCoords.x+x<8 && currentCoords.y+x<8) {
-                res.push({x : currentCoords.x+x, y : currentCoords.y+x})
+        const res: { x: number; y: number }[] = [];
+        const directions = [
+            {dx: 1, dy: 1},
+            {dx: 1, dy: -1},
+            {dx: -1, dy: 1},
+            {dx: -1, dy: -1},
+        ];
+
+        for (const {dx, dy} of directions) {
+            let x = currentCoords.x + dx;
+            let y = currentCoords.y + dy;
+            while (x >= 0 && x < 8 && y >= 0 && y < 8) {
+                res.push({x, y});
+                x += dx;
+                y += dy;
             }
         }
+
         return res;
     }
 }
 
+
 export class QueenMovable implements Movable {
     isValidMove(from: Coords, to: Coords): boolean {
-        let dx = from.x - to.x, dy = from.y = to.y
-        return ((dx<0 && dy>0 && dx+dy==0) || (dy<0 && dx>0 && dx+dy==0) || (from.x==to.x) || (from.y==to.y)) && to.x>=0 && to.x<=7
+        let dx = Math.abs(from.x - to.x);
+        let dy = Math.abs(from.y - to.y);
+
+        // Queen moves diagonally, vertically, or horizontally
+        return (
+            (dx === dy) || // Diagonal move (same difference in x and y)
+            (from.x === to.x) || // Vertical move (same x)
+            (from.y === to.y) // Horizontal move (same y)
+        ) && to.x >= 0 && to.x <= 7 && to.y >= 0 && to.y <= 7;
     }
+
     giveValidCoords(currentCoords: Coords): { x: number; y: number }[] {
-        let res : {x : number, y: number}[] = [];
-        for (let x=-8; x<=8; x++) {
-            if (currentCoords.x + x >=0 && currentCoords.y + x >= 0 && currentCoords.x+x<8 && currentCoords.y+x<8) {
-                res.push({x : currentCoords.x+x, y : currentCoords.y+x})
+        let res: { x: number; y: number }[] = [];
+
+        for (let i = 1; i <= 7; i++) {
+
+            if (currentCoords.x + i <= 7 && currentCoords.y + i <= 7) {
+                res.push({ x: currentCoords.x + i, y: currentCoords.y + i });
+            }
+
+            if (currentCoords.x + i <= 7 && currentCoords.y - i >= 0) {
+                res.push({ x: currentCoords.x + i, y: currentCoords.y - i });
+            }
+
+            if (currentCoords.x - i >= 0 && currentCoords.y + i <= 7) {
+                res.push({ x: currentCoords.x - i, y: currentCoords.y + i });
+            }
+
+            if (currentCoords.x - i >= 0 && currentCoords.y - i >= 0) {
+                res.push({ x: currentCoords.x - i, y: currentCoords.y - i });
             }
         }
-        for (let y=0; y<8; y++) {
-            res.push({x : currentCoords.x, y})
+        for (let x = 0; x < 8; x++) {
+            if (x !== currentCoords.x) {
+                res.push({ x, y: currentCoords.y });
+            }
         }
-        for (let x =0; x<8; x++) {
-            res.push({x,y : currentCoords.y})
+        for (let y = 0; y < 8; y++) {
+            if (y !== currentCoords.y) {
+                res.push({ x: currentCoords.x, y });
+            }
         }
+
         return res;
     }
 }
+
 
 export class KingMovable implements Movable {
     isValidMove(from: Coords, to: Coords): boolean {

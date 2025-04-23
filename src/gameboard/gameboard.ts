@@ -15,6 +15,12 @@ export class Gameboard {
         this.currentTurn = "w"
     }
 
+    destroy() {
+        this.grid = [];
+        this.currentTurn = "w"
+        this.previousMoves = []
+    }
+
     setUpBoard() {
         for (let x = 0; x < 8; x++) {
             for (let y = 0; y < 8; y++) {
@@ -488,23 +494,49 @@ export class Gameboard {
         if (piece.symbol[1] === "p") {
             if (this.currentTurn === "w") {
                 if (from.x - 2 === to.x && from.y === to.y && !targetPiece && fromCell.getCoords().x === 6) {
+                    if (targetPiece!==null) return false;
                     fromCell.setPiece(null);
                     toCell.setPiece(piece);
+                    if (this.isCheck(this.currentTurn)) {
+                        toCell.setPiece(null);
+                        fromCell.setPiece(piece)
+                        return false
+                    }
                     this.previousMoves.push({from, to, piece})
                     this.currentTurn = "b"
                     return true;
                 }
                 if (from.x - 1 === to.x && from.y === to.y && !targetPiece) {
+                    if (targetPiece!==null) return false;
                     fromCell.setPiece(null);
                     toCell.setPiece(piece);
+                    if (this.isCheck(this.currentTurn)) {
+                        toCell.setPiece(null);
+                        fromCell.setPiece(piece)
+                        return false
+                    }
                     this.previousMoves.push({from, to, piece})
                     this.currentTurn = "b"
                     return true;
                 }
                 if (from.x - 1 === to.x && (from.y - 1 === to.y || from.y + 1 === to.y) && targetPiece) {
+                //    if (targetPiece!==null) return false;
                     this.previousMoves.push({from, to, piece})
                     fromCell.setPiece(null);
                     toCell.setPiece(piece);
+                    this.currentTurn = "b"
+                    return true;
+                }
+                if (from.x-1===to.x && from.y===to.y && to.x === 0) {
+                    if (targetPiece!==null) return false;
+                    fromCell.setPiece(null);
+                    toCell.setPiece(new Queen(this.currentTurn, `${this.currentTurn}q`));
+                    if (this.isCheck(this.currentTurn)) {
+                        toCell.setPiece(null);
+                        fromCell.setPiece(piece)
+                        return false
+                    }
+                    this.previousMoves.push({from, to, piece})
                     this.currentTurn = "b"
                     return true;
                 }
@@ -536,7 +568,7 @@ export class Gameboard {
         }
 
         const validPositions = piece.giveDirections(from);
-        console.log(validPositions);
+     //   console.log(validPositions);
 
         const isValid = validPositions.some(pos => pos.x === to.x && pos.y === to.y);
         if (!isValid) {

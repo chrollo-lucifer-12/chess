@@ -304,19 +304,19 @@ export class Gameboard {
         newCell1 = this.getCell({x, y: 5});
         newCell2 = this.getCell({x, y: 6});
         if (newCell1.getPiece() !== null || newCell2.getPiece()!== null) {
-    //        console.log("something betwwen king and rook")
+            console.log("something betwwen king and rook")
             return false;
         }
         fromCell.setPiece(null);
         toCell.setPiece(null);
-        newCell1.setPiece(piece);
-        newCell2.setPiece(targetPiece);
+        newCell1.setPiece(targetPiece);
+        newCell2.setPiece(piece);
         if (this.isCheck(this.currentTurn)) {
             newCell1.setPiece(null);
             newCell2.setPiece(null);
             fromCell.setPiece(piece);
             toCell.setPiece(targetPiece);
-        //    console.log("king will be in check")
+           console.log("king will be in check")
             return false;
         }
         return true;
@@ -331,19 +331,18 @@ export class Gameboard {
         if (newCell1.getPiece() !== null || newCell2.getPiece() !== null || newCell3.getPiece() !== null) return false;
         fromCell.setPiece(null);
         toCell.setPiece(null);
-        newCell3.setPiece(piece);
-        newCell2.setPiece(targetPiece);
+        newCell3.setPiece(targetPiece);
+        newCell2.setPiece(piece);
         if (this.isCheck(this.currentTurn)) {
             newCell1.setPiece(null);
             newCell2.setPiece(null);
             newCell3.setPiece(null);
-            fromCell.setPiece(piece);
-            toCell.setPiece(targetPiece);
+            fromCell.setPiece(targetPiece);
+            toCell.setPiece(piece);
             return false;
         }
         return true;
     }
-
 
     checkObstruction(fromCell: GameBoardCell, toCell: GameBoardCell): boolean {
         const fromCoords = fromCell.getCoords();
@@ -445,6 +444,17 @@ export class Gameboard {
     }
 
 
+    checkIfMoved (piece : ChessPiece | null) {
+        if (!piece) return true;
+        for (let move of this.previousMoves) {
+            if (move.piece === piece) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
     move(from: Coords, to: Coords) {
         const fromCell = this.getCell(from);
         const toCell = this.getCell(to);
@@ -456,29 +466,29 @@ export class Gameboard {
 
         if (!piece) return false;
 
-        if (piece.symbol === `${this.currentTurn}r` && targetPiece && targetPiece.symbol === `${this.currentTurn}k`) {
-            for (let move of this.previousMoves) {
-                if (move.piece === piece || move.piece === targetPiece) {
-                    return false;
-                }
-            }
-            if (this.isCheck(this.currentTurn)) {  return false;}
+        if (piece.symbol === `${this.currentTurn}k` && Math.abs(from.y - to.y)==2) {
+            if (this.checkIfMoved(piece)) { console.log("already moved");  return false;}
+            if (this.isCheck(this.currentTurn)) { console.log("king is in check"); return false;}
             let res;
-            if (this.currentTurn === "w") {
-
-                if (from.x === 7 && to.x === 7 && from.y === 7 && to.y === 4) {//kings side
-                     res = this.checkKingSideCastling(fromCell, toCell, piece, targetPiece);
+            if (this.currentTurn === "w" && from.x === 7 && to.x === 7) {
+                if (to.y === 6) { // king-side
+                    const rookCell = this.getCell({ x: 7, y: 7 });
+                    if (this.checkIfMoved(rookCell.getPiece())) return false;
+                    res = this.checkKingSideCastling(fromCell, rookCell, piece, rookCell.getPiece()!);
+                } else if (to.y === 2) { // queen-side
+                    const rookCell = this.getCell({ x: 7, y: 0 });
+                    if (this.checkIfMoved(rookCell.getPiece())) return false;
+                    res = this.checkQueenSideCastling(fromCell, rookCell, piece, rookCell.getPiece()!);
                 }
-                if (from.x === 7 && to.x === 7 && from.y === 0 && to.y === 4) { // queens side
-                     res = this.checkQueenSideCastling(fromCell, toCell, piece, targetPiece);
-                }
-            }
-            else {
-                if (from.x === 0 && to.x === 0 && from.y === 7 && to.y === 4) {//kings side
-                     res = this.checkKingSideCastling(fromCell, toCell, piece, targetPiece);
-                }
-                if (from.x === 0 && to.x === 0 && from.y === 0 && to.y === 4) { // queens side
-                     res = this.checkQueenSideCastling(fromCell, toCell, piece, targetPiece);
+            } else if (this.currentTurn === "b" && from.x === 0 && to.x === 0) {
+                if (to.y === 6) { // king-side
+                    const rookCell = this.getCell({ x: 0, y: 7 });
+                    if (this.checkIfMoved(rookCell.getPiece())) return false;
+                    res = this.checkKingSideCastling(fromCell, rookCell, piece, rookCell.getPiece()!);
+                } else if (to.y === 2) { // queen-side
+                    const rookCell = this.getCell({ x: 0, y: 0 });
+                    if (this.checkIfMoved(rookCell.getPiece())) return false;
+                    res = this.checkQueenSideCastling(fromCell, rookCell, piece, rookCell.getPiece()!);
                 }
             }
             if (res) {
@@ -487,6 +497,7 @@ export class Gameboard {
                 return true;
             }
             else {
+                console.log("hattt")
                 return false;
             }
         }

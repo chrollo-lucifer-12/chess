@@ -32,6 +32,14 @@ export class Game {
         this.sendNames()
     }
 
+    getPlayer1Username () {
+        return this.player1.getUsername()
+    }
+
+    getPlayer2Username() {
+        return this.player2.getUsername()
+    }
+
     sendNames () {
         this.player1.sendMessage(JSON.stringify({
             type : "opponent",
@@ -67,7 +75,7 @@ export class Game {
 
     sendMove(move: { from: Coords, to: Coords }, capturedPiece : string | null | undefined) {
         this.player1.sendMessage(JSON.stringify({
-            type: "move",
+            type: "move_made",
             payload: {
                 move,
                 currentTurn: this.gameBoard.getCurrentTurn(),
@@ -75,7 +83,7 @@ export class Game {
             }
         }))
         this.player2.sendMessage(JSON.stringify({
-            type: "move",
+            type: "move_made",
             payload: {
                 move,
                 currentTurn: this.gameBoard.getCurrentTurn(),

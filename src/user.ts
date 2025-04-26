@@ -7,6 +7,10 @@ export class User {
         return this.username
     }
 
+    getSocket () {
+        return this.ws
+    }
+
     sendMessage (message : string) {
         this.ws.send(message);
     }

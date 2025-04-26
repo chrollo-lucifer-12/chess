@@ -253,21 +253,16 @@ export class Gameboard {
                 kPiece?.canMove(kCoords, {x: xx, y: yy}) &&
                 (!targetPiece || targetPiece.color !== color)
             ) {
-                // simulate move
                 kingCell.setPiece(null);
                 newCell.setPiece(new King(color, `${color}k`));
 
                 const stillInCheck = this.isCheck(color);
-
-                // revert move
                 newCell.setPiece(targetPiece);
                 kingCell.setPiece(kPiece);
 
                 if (!stillInCheck) return false;
             }
         }
-
-        // Try moving other pieces
         for (let x = 0; x < 8; x++) {
             for (let y = 0; y < 8; y++) {
                 const fromCell = this.getCell({x, y});
@@ -292,33 +287,33 @@ export class Gameboard {
             }
         }
 
-        return true; // no valid moves => checkmate
+        return true;
     }
 
     isStalemate() {
-        let c = 0, findcell;
         for (let cell of this.grid) {
-            if (cell.getPiece()?.color === this.currentTurn) {
-                c++;
-                findcell = cell
-            }
-        }
-        if (c > 1 || findcell?.getPiece()?.getSymbol()[1]!=='k') return false;
-        let dir = [[1,0],[1,1],[1,-1],[0,1],[0,-1],[-1,0],[-1,-1],[-1,1]];
-        for (let d of dir) {
-            let xx = findcell!.getCoords().x + d[0], yy = findcell!.getCoords().y + d[1]
-            if (xx>=0 && xx<8 && yy>=0 && yy<8) {
-                let newCell = this.getCell({x:xx,y:yy})
-                let piece = findcell.getPiece();
-                newCell.setPiece(piece)
-                findcell.setPiece(null);
-                if (!this.isCheck(this.currentTurn)) {
-                    return false;
+            let piece = cell.getPiece();
+            if (piece?.color === this.currentTurn) {
+                let moves = piece.giveDirections(cell.getCoords());
+                for (let move of moves) {
+                    const targetCell = this.getCell(move);
+                    const originalPiece = targetCell.getPiece();
+                    const fromPiece = piece;
+                    targetCell.setPiece(fromPiece);
+                    cell.setPiece(null);
+                    const isStillInCheck = this.isCheck(this.currentTurn);
+                    cell.setPiece(fromPiece);
+                    targetCell.setPiece(originalPiece);
+
+                    if (!isStillInCheck) {
+                        return false;
+                    }
                 }
             }
         }
         return true;
     }
+
 
     checkKingSideCastling (fromCell : GameBoardCell , toCell: GameBoardCell, piece: ChessPiece, targetPiece : ChessPiece) {
     //    console.log("king castle");
@@ -469,7 +464,6 @@ export class Gameboard {
         return false;
     }
 
-
     checkIfMoved (piece : ChessPiece | null) {
         if (!piece) return true;
         for (let move of this.previousMoves) {
@@ -489,71 +483,74 @@ export class Gameboard {
 
         //     console.log(piece);
 
-        if (!piece) return false;
+        if (!piece) return {
+            success : false,
+            capturedPiece : null
+        };
 
         if (piece.symbol === `${this.currentTurn}k` && Math.abs(from.y - to.y)==2) {
-            if (this.checkIfMoved(piece)) { console.log("already moved");  return false;}
-            if (this.isCheck(this.currentTurn)) { console.log("king is in check"); return false;}
+            if (this.checkIfMoved(piece)) { return {success : false, capturedPiece: null}}
+            if (this.isCheck(this.currentTurn)) { return {success :  false, capturedPiece:  null}}
             let res;
             if (this.currentTurn === "w" && from.x === 7 && to.x === 7) {
-                if (to.y === 6) { // king-side
+                if (to.y === 6) {
                     const rookCell = this.getCell({ x: 7, y: 7 });
-                    if (this.checkIfMoved(rookCell.getPiece())) return false;
+                    if (this.checkIfMoved(rookCell.getPiece())) return {success:  false, capturedPiece:  null};
                     res = this.checkKingSideCastling(fromCell, rookCell, piece, rookCell.getPiece()!);
-                } else if (to.y === 2) { // queen-side
+                } else if (to.y === 2) {
                     const rookCell = this.getCell({ x: 7, y: 0 });
-                    if (this.checkIfMoved(rookCell.getPiece())) return false;
+                    if (this.checkIfMoved(rookCell.getPiece())) return {success : false, capturedPiece: null}
                     res = this.checkQueenSideCastling(fromCell, rookCell, piece, rookCell.getPiece()!);
                 }
             } else if (this.currentTurn === "b" && from.x === 0 && to.x === 0) {
                 if (to.y === 6) { // king-side
                     const rookCell = this.getCell({ x: 0, y: 7 });
-                    if (this.checkIfMoved(rookCell.getPiece())) return false;
+                    if (this.checkIfMoved(rookCell.getPiece())) return {success : false, capturedPiece: null};
                     res = this.checkKingSideCastling(fromCell, rookCell, piece, rookCell.getPiece()!);
                 } else if (to.y === 2) { // queen-side
                     const rookCell = this.getCell({ x: 0, y: 0 });
-                    if (this.checkIfMoved(rookCell.getPiece())) return false;
+                    if (this.checkIfMoved(rookCell.getPiece())) return {success  :false, capturedPiece: null};
                     res = this.checkQueenSideCastling(fromCell, rookCell, piece, rookCell.getPiece()!);
                 }
             }
             if (res) {
                 this.previousMoves.push({from, to, piece})
                 this.currentTurn = this.currentTurn === "w" ? "b" : "w";
-                return true;
+                return {success : true, capturedPiece: null};
             }
             else {
-                console.log("hattt")
-                return false;
+              //  console.log("hattt")
+                return {success : false, capturedPiece: null};
             }
         }
 
         if (piece.symbol[1] === "p") {
             if (this.currentTurn === "w") {
                 if (from.x - 2 === to.x && from.y === to.y && !targetPiece && fromCell.getCoords().x === 6) {
-                    if (targetPiece!==null) return false;
+                    if (targetPiece!==null) return {success : false, capturedPiece: null};
                     fromCell.setPiece(null);
                     toCell.setPiece(piece);
                     if (this.isCheck(this.currentTurn)) {
                         toCell.setPiece(null);
                         fromCell.setPiece(piece)
-                        return false
+                        return {success: false, capturedPiece: null}
                     }
                     this.previousMoves.push({from, to, piece})
                     this.currentTurn = "b"
-                    return true;
+                    return {success: true, capturedPiece: null};
                 }
                 if (from.x - 1 === to.x && from.y === to.y && !targetPiece) {
-                    if (targetPiece!==null) return false;
+                    if (targetPiece!==null) return {success: false, capturedPiece: null};
                     fromCell.setPiece(null);
                     toCell.setPiece(piece);
                     if (this.isCheck(this.currentTurn)) {
                         toCell.setPiece(null);
                         fromCell.setPiece(piece)
-                        return false
+                        return {success : false, capturedPiece: null}
                     }
                     this.previousMoves.push({from, to, piece})
                     this.currentTurn = "b"
-                    return true;
+                    return {success: true, capturedPiece: null};
                 }
                 if (from.x - 1 === to.x && (from.y - 1 === to.y || from.y + 1 === to.y) && targetPiece) {
                 //    if (targetPiece!==null) return false;
@@ -561,20 +558,20 @@ export class Gameboard {
                     fromCell.setPiece(null);
                     toCell.setPiece(piece);
                     this.currentTurn = "b"
-                    return true;
+                    return {success: true, capturedPiece: targetPiece.symbol};
                 }
                 if (from.x-1===to.x && from.y===to.y && to.x === 0) {
-                    if (targetPiece!==null) return false;
+                    if (targetPiece!==null) return {success : false, capturedPiece: null};
                     fromCell.setPiece(null);
                     toCell.setPiece(new Queen(this.currentTurn, `${this.currentTurn}q`));
                     if (this.isCheck(this.currentTurn)) {
                         toCell.setPiece(null);
                         fromCell.setPiece(piece)
-                        return false
+                        return {success : false, capturedPiece: null}
                     }
                     this.previousMoves.push({from, to, piece})
                     this.currentTurn = "b"
-                    return true;
+                    return {success: true, capturedPiece: null};
                 }
             } else if (this.currentTurn === "b") {
                 if (from.x + 2 === to.x && from.y === to.y && !targetPiece && fromCell.getCoords().x === 1) {
@@ -582,25 +579,25 @@ export class Gameboard {
                     toCell.setPiece(piece);
                     this.previousMoves.push({from, to, piece})
                     this.currentTurn = "w"
-                    return true;
+                    return {success: true, capturedPiece: null};
                 }
                 if (from.x + 1 === to.x && from.y === to.y && !targetPiece) {
                     fromCell.setPiece(null);
                     toCell.setPiece(piece);
                     this.previousMoves.push({from, to, piece})
                     this.currentTurn = "w"
-                    return true;
+                    return {success: true, capturedPiece: null};
                 }
                 if (from.x + 1 === to.x && (from.y + 1 === to.y || from.y - 1 === to.y) && targetPiece) {
                     this.previousMoves.push({from, to, piece})
                     fromCell.setPiece(null);
                     toCell.setPiece(piece);
                     this.currentTurn = "w"
-                    return true;
+                    return {success :true, capturedPiece: targetPiece.symbol};
                 }
             }
         //    console.log("wrong move")
-            return false;
+            return {success: false, capturedPiece: null};
         }
 
         const validPositions = piece.giveDirections(from);
@@ -608,14 +605,14 @@ export class Gameboard {
 
         const isValid = validPositions.some(pos => pos.x === to.x && pos.y === to.y);
         if (!isValid) {
-            return false;
+            return {success: false, capturedPiece: null};
         }
 
-        if (targetPiece && targetPiece.color === piece.color) return false;
+        if (targetPiece && targetPiece.color === piece.color) return {success: false, capturedPiece: null};
 
         if (this.checkObstruction(fromCell,toCell)) {
    //      console.log("wrong move ")
-         return false;
+         return {success: false, capturedPiece: null};
         }
 
         fromCell.setPiece(null);
@@ -626,12 +623,12 @@ export class Gameboard {
         if (isKingInCheck) {
             toCell.setPiece(targetPiece);
             fromCell.setPiece(piece);
-            console.log("king in check")
-            return false;
+           // console.log("king in check")
+            return {success: false, capturedPiece: null};
         }
         if (this.currentTurn === "b") this.currentTurn = "w";
         else this.currentTurn = "b";
         this.previousMoves.push({from, to, piece})
-        return true;
+        return {success: true, capturedPiece: targetPiece?.symbol};
     }
 }

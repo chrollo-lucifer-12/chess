@@ -70,6 +70,7 @@ export class Game {
             return;
         }
         if (!success) return;
+        this.gameBoard.printBoard();
         this.sendMove(move, capturedPiece)
     }
 

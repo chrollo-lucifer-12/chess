@@ -5,6 +5,8 @@
   "license": "MIT",
   "dependencies": {
     "@types/ws": "^8.18.1",
+    "chalk": "^5.4.1",
+    "colorette": "^2.0.20",
     "typescript": "^5.8.3",
     "ws": "^8.18.1"
   },

@@ -11,11 +11,11 @@ wss.on("connection", (websocket) => {
         console.error(error)
     })
 
-    websocket.on("message", (message) => {
+    websocket.on("message", async (message) => {
         const data = JSON.parse(message.toString());
         if (data.type === "join_lobby") {
-            const user = new User(websocket, data.userId, data.username)
-            gameManager.addUser(user);
+            const user = new User(websocket, data.userId, data.username, data.color)
+            await gameManager.addUser(user);
         }
     })
 

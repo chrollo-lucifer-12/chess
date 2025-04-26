@@ -1,11 +1,10 @@
 import {User} from "./user";
 import {Gameboard} from "./gameboard/gameboard"
 import {Coords} from "./types";
-import {ChessPiece} from "./gameboard/piece";
 
 export class Game {
-    private player1: User
-    private player2: User
+    private player1: User | null
+    private player2: User | null
     private player1Time: number
     private player2Time: number
     private gameBoard: Gameboard
@@ -33,29 +32,49 @@ export class Game {
         this.sendNames()
     }
 
+    setPlayer1(user : User | null) {
+        if (user) {
+            console.log(user.getUsername() + "reconnected")
+            this.player1 = user
+        }
+        else {
+            this.player1 = null
+        }
+    }
+
+    setPlayer2 (user : User | null) {
+        if (user) {
+            console.log(user.getUsername() + "reconnected")
+            this.player2 = user
+        }
+        else {
+            this.player2 = null
+        }
+    }
+
     setUpBoard (previousMoves: { from: Coords; to: Coords; piece: {symbol :string, id : string} }[]) {
         this.gameBoard.setUpBoardManually(previousMoves)
     }
 
-    getPlayer1Username () {
-        return this.player1.getUsername()
+    getPlayer1 () {
+        return this.player1
     }
 
-    getPlayer2Username() {
-        return this.player2.getUsername()
+    getPlayer2() {
+        return this.player2
     }
 
     sendNames () {
-        this.player1.sendMessage(JSON.stringify({
+        this.player1?.sendMessage(JSON.stringify({
             type : "opponent",
             payload : {
-                username : this.player2.getUsername()
+                username : this.player2?.getUsername()
             }
         }))
-        this.player2.sendMessage(JSON.stringify({
+        this.player2?.sendMessage(JSON.stringify({
             type : "opponent",
             payload : {
-                username : this.player1.getUsername()
+                username : this.player1?.getUsername()
             }
         }))
     }
@@ -80,7 +99,7 @@ export class Game {
     }
 
     sendMove(move: { from: Coords, to: Coords }, capturedPiece : string | null | undefined) {
-        this.player1.sendMessage(JSON.stringify({
+        this.player1?.sendMessage(JSON.stringify({
             type: "move_made",
             payload: {
                 move,
@@ -88,7 +107,7 @@ export class Game {
                 capturedPiece
             }
         }))
-        this.player2.sendMessage(JSON.stringify({
+        this.player2?.sendMessage(JSON.stringify({
             type: "move_made",
             payload: {
                 move,
@@ -99,23 +118,23 @@ export class Game {
     }
 
     sendStalemate() {
-        this.player1.sendMessage(JSON.stringify({
+        this.player1?.sendMessage(JSON.stringify({
             type: "stalemate",
         }))
-        this.player2.sendMessage(JSON.stringify({
+        this.player2?.sendMessage(JSON.stringify({
             type: "stalemate",
         }))
         this.gameBoard.destroy();
     }
 
     sendDefeat(winner : string) {
-        this.player1.sendMessage(JSON.stringify({
+        this.player1?.sendMessage(JSON.stringify({
             type : "game_over",
             payload : {
                 winner
             }
         }))
-        this.player2.sendMessage(JSON.stringify({
+        this.player2?.sendMessage(JSON.stringify({
             type : "game_over",
             payload : {
                 winner

@@ -68,7 +68,8 @@ export class Gameboard {
         }
         previousMoves.forEach(({to, piece}) => {
             const toCell = this.getCell(to);
-            const color : "b" | "w" = piece.symbol[0];
+            // @ts-ignore
+            let color : "b" | "w" = piece.symbol[0];
             let newPiece : ChessPiece | null = null;
             switch (piece.symbol[1]) {
                 case "p" :{

@@ -6,7 +6,7 @@ export class Gameboard {
 
     private grid: GameBoardCell[] = [];
     private currentTurn: "b" | "w"
-    private previousMoves: { from: Coords, to: Coords, piece: ChessPiece }[] = []
+    private previousMoves: { from: Coords, to: Coords, piece: {id : string, symbol : string} }[] = []
 
     constructor() {
         this.setUpBoard();
@@ -60,24 +60,45 @@ export class Gameboard {
         }
     }
 
-    setUpBoardManually(previousMoves: { from: Coords; to: Coords; piece: ChessPiece }[]) {
-        // Clear the board
+    setUpBoardManually(previousMoves: { from: Coords; to: Coords; piece: {id : string, symbol : string} }[]) {
         for (let row = 0; row < 8; row++) {
             for (let col = 0; col < 8; col++) {
                 this.getCell({x: row, y: col}).setPiece(null);
             }
         }
-
-        // Place all moved pieces based on final positions
         previousMoves.forEach(({to, piece}) => {
             const toCell = this.getCell(to);
-            toCell.setPiece(piece);
+            const color : "b" | "w" = piece.symbol[0];
+            let newPiece : ChessPiece | null = null;
+            switch (piece.symbol[1]) {
+                case "p" :{
+                    newPiece = new Pawn(color, piece.symbol, piece.id);
+                    break
+                }
+                case "r" : {
+                    newPiece = new Rook(color, piece.symbol, piece.id)
+                    break
+                }
+                case "n" : {
+                    newPiece = new Knight(color, piece.symbol, piece.id)
+                    break
+                }
+                case "b" : {
+                    newPiece = new Bishop(color, piece.symbol, piece.id)
+                    break
+                }
+                case "q" : {
+                    newPiece = new Queen(color, piece.symbol, piece.id)
+                    break
+                }
+                case "k" : {
+                    newPiece = new King(color, piece.symbol, piece.id)
+                    break
+                }
+            }
+            toCell.setPiece(newPiece);
         });
-
-        // Save the history
         this.previousMoves = previousMoves;
-
-        // Optionally set turn based on move history
         this.currentTurn = previousMoves.length % 2 === 0 ? "w" : "b";
     }
 
@@ -467,7 +488,7 @@ export class Gameboard {
     checkIfMoved (piece : ChessPiece | null) {
         if (!piece) return true;
         for (let move of this.previousMoves) {
-            if (move.piece === piece) {
+            if (move.piece.id === piece.getId()) {
                 return true;
             }
         }
@@ -514,7 +535,7 @@ export class Gameboard {
                 }
             }
             if (res) {
-                this.previousMoves.push({from, to, piece})
+                this.previousMoves.push({from, to, piece : {symbol: piece.symbol, id : piece.getId()}})
                 this.currentTurn = this.currentTurn === "w" ? "b" : "w";
                 return {success : true, capturedPiece: null};
             }
@@ -535,7 +556,7 @@ export class Gameboard {
                         fromCell.setPiece(piece)
                         return {success: false, capturedPiece: null}
                     }
-                    this.previousMoves.push({from, to, piece})
+                    this.previousMoves.push({from, to, piece : {symbol: piece.symbol, id : piece.getId()}})
                     this.currentTurn = "b"
                     return {success: true, capturedPiece: null};
                 }
@@ -548,13 +569,13 @@ export class Gameboard {
                         fromCell.setPiece(piece)
                         return {success : false, capturedPiece: null}
                     }
-                    this.previousMoves.push({from, to, piece})
+                    this.previousMoves.push({from, to, piece : {symbol: piece.symbol, id : piece.getId()}})
                     this.currentTurn = "b"
                     return {success: true, capturedPiece: null};
                 }
                 if (from.x - 1 === to.x && (from.y - 1 === to.y || from.y + 1 === to.y) && targetPiece) {
                 //    if (targetPiece!==null) return false;
-                    this.previousMoves.push({from, to, piece})
+                    this.previousMoves.push({from, to, piece : {symbol: piece.symbol, id : piece.getId()}})
                     fromCell.setPiece(null);
                     toCell.setPiece(piece);
                     this.currentTurn = "b"
@@ -569,7 +590,7 @@ export class Gameboard {
                         fromCell.setPiece(piece)
                         return {success : false, capturedPiece: null}
                     }
-                    this.previousMoves.push({from, to, piece})
+                    this.previousMoves.push({from, to, piece : {symbol: piece.symbol, id : piece.getId()}})
                     this.currentTurn = "b"
                     return {success: true, capturedPiece: null};
                 }
@@ -577,19 +598,19 @@ export class Gameboard {
                 if (from.x + 2 === to.x && from.y === to.y && !targetPiece && fromCell.getCoords().x === 1) {
                     fromCell.setPiece(null);
                     toCell.setPiece(piece);
-                    this.previousMoves.push({from, to, piece})
+                    this.previousMoves.push({from, to, piece : {symbol: piece.symbol, id : piece.getId()}})
                     this.currentTurn = "w"
                     return {success: true, capturedPiece: null};
                 }
                 if (from.x + 1 === to.x && from.y === to.y && !targetPiece) {
                     fromCell.setPiece(null);
                     toCell.setPiece(piece);
-                    this.previousMoves.push({from, to, piece})
+                    this.previousMoves.push({from, to, piece : {symbol: piece.symbol, id : piece.getId()}})
                     this.currentTurn = "w"
                     return {success: true, capturedPiece: null};
                 }
                 if (from.x + 1 === to.x && (from.y + 1 === to.y || from.y - 1 === to.y) && targetPiece) {
-                    this.previousMoves.push({from, to, piece})
+                    this.previousMoves.push({from, to, piece : {symbol: piece.symbol, id : piece.getId()}})
                     fromCell.setPiece(null);
                     toCell.setPiece(piece);
                     this.currentTurn = "w"
@@ -628,7 +649,7 @@ export class Gameboard {
         }
         if (this.currentTurn === "b") this.currentTurn = "w";
         else this.currentTurn = "b";
-        this.previousMoves.push({from, to, piece})
+        this.previousMoves.push({from, to, piece : {symbol: piece.symbol, id : piece.getId()}})
         return {success: true, capturedPiece: targetPiece?.symbol};
     }
 }

@@ -1,6 +1,7 @@
 import {User} from "./user";
 import {Gameboard} from "./gameboard/gameboard"
 import {Coords} from "./types";
+import {ChessPiece} from "./gameboard/piece";
 
 export class Game {
     private player1: User
@@ -30,6 +31,10 @@ export class Game {
             }
         }))
         this.sendNames()
+    }
+
+    setUpBoard (previousMoves: { from: Coords; to: Coords; piece: {symbol :string, id : string} }[]) {
+        this.gameBoard.setUpBoardManually(previousMoves)
     }
 
     getPlayer1Username () {

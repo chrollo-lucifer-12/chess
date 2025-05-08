@@ -1,6 +1,9 @@
 import {User} from "./user";
 import {Gameboard} from "./gameboard/gameboard"
 import {Coords} from "./types";
+import axios from "axios"
+import dotenv from "dotenv"
+dotenv.config();
 
 export class Game {
     private player1: User | null
@@ -67,8 +70,7 @@ export class Game {
         return this.player2
     }
 
-
-    makeMove(player: User, move: { from: Coords, to: Coords }) {
+    async makeMove(player: User, move: { from: Coords, to: Coords }, gameId : string) {
         if (this.gameBoard.getCurrentTurn() !== player.getColor()) {
             return;
         }
@@ -85,6 +87,12 @@ export class Game {
         if (!success) return;
         this.gameBoard.printBoard();
         this.sendMove(move, capturedPiece, piece!, isCastling)
+        await axios.post(`${process.env.NEXT_BACKEND_URL}/move/add`, {
+            gameId,
+            username : player.getUsername(),
+          from :  move.from,
+            to :move.to
+        })
     }
 
      coordsToAlgebraic(x: number, y: number ): string {
@@ -93,7 +101,7 @@ export class Game {
         return `${file}${rank}`;
     }
 
-    sendMove(move: { from: Coords, to: Coords }, capturedPiece : string | null | undefined, piece : string, isCastling : boolean | undefined) {
+     sendMove(move: { from: Coords, to: Coords }, capturedPiece : string | null | undefined, piece : string, isCastling : boolean | undefined) {
 
         const toSquare = this.coordsToAlgebraic(move.to.x, move.to.y);
         const pieceLetter = piece.toUpperCase() === 'P' ? '' : piece.toUpperCase();
@@ -109,7 +117,8 @@ export class Game {
             payload: {
                 board : this.gameBoard.getBoard(),
                 capturedPiece,
-                move : finalMove
+                move : finalMove,
+                currentTurn : this.gameBoard.getCurrentTurn()
             }
         }))
         this.player2?.sendMessage(JSON.stringify({
@@ -117,9 +126,12 @@ export class Game {
             payload: {
                 board : this.gameBoard.getBoard(),
                 capturedPiece,
-                move : finalMove
+                move : finalMove,
+                currentTurn : this.gameBoard.getCurrentTurn()
             }
         }))
+
+
     }
 
     sendStalemate() {

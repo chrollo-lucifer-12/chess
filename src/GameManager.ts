@@ -1,6 +1,9 @@
 import {Game} from "./Game";
 import {User} from "./user";
 import {blue, red, bold} from "colorette"
+import axios from "axios"
+import dotenv from "dotenv"
+dotenv.config();
 
 export class GameManager {
     private readonly games : Map<string, Game>
@@ -24,7 +27,7 @@ export class GameManager {
     }
 
     private initHandler (user : User) {
-        user.getSocket().addEventListener("message", (e) => {
+        user.getSocket().addEventListener("message", async (e) => {
             const message = JSON.parse(e.data.toString())
            // const gameId = message.gameId
             switch (message.type) {
@@ -44,8 +47,11 @@ export class GameManager {
                     }
                     if (this.pendingUser) {
                         console.log(red("starting new game") + bold(user.getUsername() + " " + "vs" + " " + this.pendingUser.getUsername()));
-                        const game = new Game(this.pendingUser, user, 10,10)
+                        const game = new Game(this.pendingUser, user, 600,600)
                         const newGameId = crypto.randomUUID()
+                        await axios.post(`${process.env.NEXT_BACKEND_URL}/game/add`, {
+                            gameId : newGameId
+                        });
                         user.sendMessage(JSON.stringify({
                             type : "gameId",
                             gameId : newGameId
@@ -67,7 +73,7 @@ export class GameManager {
                     for (let [k,v] of this.games) {
                         if (k===message.gameId) {
                             console.log(message.move);
-                            v.makeMove(user, message.move);
+                            await v.makeMove(user, message.move, message.gameId);
                             break;
                         }
                     }

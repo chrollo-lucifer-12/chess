@@ -546,7 +546,7 @@ export class Gameboard {
             if (res) {
                 this.previousMoves.push({from, to, piece : {symbol: piece.symbol, id : piece.getId()}})
                 this.currentTurn = this.currentTurn === "w" ? "b" : "w";
-                return {success : true, capturedPiece: null};
+                return {success : true, capturedPiece: null, piece : piece.symbol, isCastling : true};
             }
             else {
               //  console.log("hattt")
@@ -567,7 +567,7 @@ export class Gameboard {
                     }
                     this.previousMoves.push({from, to, piece : {symbol: piece.symbol, id : piece.getId()}})
                     this.currentTurn = "b"
-                    return {success: true, capturedPiece: null};
+                    return {success: true, capturedPiece: null, piece : piece.symbol, isCastling:  false};
                 }
                 if (from.x - 1 === to.x && from.y === to.y && !targetPiece) {
                     if (targetPiece!==null) return {success: false, capturedPiece: null};
@@ -580,7 +580,7 @@ export class Gameboard {
                     }
                     this.previousMoves.push({from, to, piece : {symbol: piece.symbol, id : piece.getId()}})
                     this.currentTurn = "b"
-                    return {success: true, capturedPiece: null};
+                    return {success: true, capturedPiece: null, piece : piece.symbol, isCastling:  false};
                 }
                 if (from.x - 1 === to.x && (from.y - 1 === to.y || from.y + 1 === to.y) && targetPiece) {
                 //    if (targetPiece!==null) return false;
@@ -588,7 +588,7 @@ export class Gameboard {
                     fromCell.setPiece(null);
                     toCell.setPiece(piece);
                     this.currentTurn = "b"
-                    return {success: true, capturedPiece: targetPiece.symbol};
+                    return {success: true, capturedPiece: targetPiece.symbol, piece : piece.symbol, isCastling: false};
                 }
                 if (from.x-1===to.x && from.y===to.y && to.x === 0) {
                     if (targetPiece!==null) return {success : false, capturedPiece: null};
@@ -601,7 +601,7 @@ export class Gameboard {
                     }
                     this.previousMoves.push({from, to, piece : {symbol: piece.symbol, id : piece.getId()}})
                     this.currentTurn = "b"
-                    return {success: true, capturedPiece: null};
+                    return {success: true, capturedPiece: null, piece : piece.symbol, isCastling:  false};
                 }
             } else if (this.currentTurn === "b") {
                 if (from.x + 2 === to.x && from.y === to.y && !targetPiece && fromCell.getCoords().x === 1) {
@@ -609,21 +609,21 @@ export class Gameboard {
                     toCell.setPiece(piece);
                     this.previousMoves.push({from, to, piece : {symbol: piece.symbol, id : piece.getId()}})
                     this.currentTurn = "w"
-                    return {success: true, capturedPiece: null};
+                    return {success: true, capturedPiece: null, piece : piece.symbol, isCastling:  false};
                 }
                 if (from.x + 1 === to.x && from.y === to.y && !targetPiece) {
                     fromCell.setPiece(null);
                     toCell.setPiece(piece);
                     this.previousMoves.push({from, to, piece : {symbol: piece.symbol, id : piece.getId()}})
                     this.currentTurn = "w"
-                    return {success: true, capturedPiece: null};
+                    return {success: true, capturedPiece: null, piece : piece.symbol, isCastling: false};
                 }
                 if (from.x + 1 === to.x && (from.y + 1 === to.y || from.y - 1 === to.y) && targetPiece) {
                     this.previousMoves.push({from, to, piece : {symbol: piece.symbol, id : piece.getId()}})
                     fromCell.setPiece(null);
                     toCell.setPiece(piece);
                     this.currentTurn = "w"
-                    return {success :true, capturedPiece: targetPiece.symbol};
+                    return {success :true, capturedPiece: targetPiece.symbol, piece : piece.symbol, isCastling: false};
                 }
             }
         //    console.log("wrong move")
@@ -659,6 +659,6 @@ export class Gameboard {
         if (this.currentTurn === "b") this.currentTurn = "w";
         else this.currentTurn = "b";
         this.previousMoves.push({from, to, piece : {symbol: piece.symbol, id : piece.getId()}})
-        return {success: true, capturedPiece: targetPiece?.symbol};
+        return {success: true, capturedPiece: targetPiece?.symbol, piece : piece.symbol, isCastling: false};
     }
 }

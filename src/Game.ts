@@ -72,7 +72,7 @@ export class Game {
         if (this.gameBoard.getCurrentTurn() !== player.getColor()) {
             return;
         }
-        const {success, capturedPiece} = this.gameBoard.move(move.from, move.to);
+        const {success, capturedPiece, piece, isCastling} = this.gameBoard.move(move.from, move.to);
         if (this.gameBoard.isCheckMate()) {
             const winner = this.gameBoard.getCurrentTurn() === "w" ? "b" : "w"
             this.sendDefeat(winner)
@@ -84,22 +84,40 @@ export class Game {
         }
         if (!success) return;
         this.gameBoard.printBoard();
-        this.sendMove(move, capturedPiece)
+        this.sendMove(move, capturedPiece, piece!, isCastling)
     }
 
-    sendMove(move: { from: Coords, to: Coords }, capturedPiece : string | null | undefined) {
+     coordsToAlgebraic(x: number, y: number ): string {
+        const file = String.fromCharCode(97 + x);
+        const rank = 8 - y;
+        return `${file}${rank}`;
+    }
+
+    sendMove(move: { from: Coords, to: Coords }, capturedPiece : string | null | undefined, piece : string, isCastling : boolean | undefined) {
+
+        const toSquare = this.coordsToAlgebraic(move.to.x, move.to.y);
+        const pieceLetter = piece.toUpperCase() === 'P' ? '' : piece.toUpperCase();
+        const captureMarker = capturedPiece ? 'x' : '';
+        let finalMove;
+        if (piece.toUpperCase() === 'P' && capturedPiece) {
+            const fromFile = this.coordsToAlgebraic(move.from.x, move.from.y)[0];
+            finalMove = `${fromFile}x${toSquare}`;
+        }
+        else finalMove = `${pieceLetter}${captureMarker}${toSquare}`;
         this.player1?.sendMessage(JSON.stringify({
             type: "move_made",
             payload: {
                 board : this.gameBoard.getBoard(),
-                capturedPiece
+                capturedPiece,
+                move : finalMove
             }
         }))
         this.player2?.sendMessage(JSON.stringify({
             type: "move_made",
             payload: {
                 board : this.gameBoard.getBoard(),
-                capturedPiece
+                capturedPiece,
+                move : finalMove
             }
         }))
     }

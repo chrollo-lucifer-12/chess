@@ -21,21 +21,23 @@ export class Game {
             type : "init_game",
             payload : {
                 color : "w",
+                opponent : this.player2.getUsername()
             }
         }))
         this.player2.sendMessage(JSON.stringify({
             type : "init_game",
             payload : {
                 color : "b",
+                opponent : this.player1.getUsername()
             }
         }))
-        this.sendNames()
     }
 
     setPlayer1(user : User | null) {
         if (user) {
             console.log(user.getUsername() + "reconnected")
             this.player1 = user
+            this.player1.setColor("w");
         }
         else {
             this.player1 = null
@@ -46,6 +48,7 @@ export class Game {
         if (user) {
             console.log(user.getUsername() + "reconnected")
             this.player2 = user
+            this.player2.setColor("b");
         }
         else {
             this.player2 = null
@@ -64,20 +67,6 @@ export class Game {
         return this.player2
     }
 
-    sendNames () {
-        this.player1?.sendMessage(JSON.stringify({
-            type : "opponent",
-            payload : {
-                username : this.player2?.getUsername()
-            }
-        }))
-        this.player2?.sendMessage(JSON.stringify({
-            type : "opponent",
-            payload : {
-                username : this.player1?.getUsername()
-            }
-        }))
-    }
 
     makeMove(player: User, move: { from: Coords, to: Coords }) {
         if (this.gameBoard.getCurrentTurn() !== player.getColor()) {
@@ -102,16 +91,14 @@ export class Game {
         this.player1?.sendMessage(JSON.stringify({
             type: "move_made",
             payload: {
-                move,
-                currentTurn: this.gameBoard.getCurrentTurn(),
+                board : this.gameBoard.getBoard(),
                 capturedPiece
             }
         }))
         this.player2?.sendMessage(JSON.stringify({
             type: "move_made",
             payload: {
-                move,
-                currentTurn: this.gameBoard.getCurrentTurn(),
+                board : this.gameBoard.getBoard(),
                 capturedPiece
             }
         }))
@@ -141,5 +128,61 @@ export class Game {
             }
         }))
         this.gameBoard.destroy();
+    }
+
+    sendResign (loser : string) {
+        this.player1?.sendMessage(JSON.stringify({
+            type : "resign",
+            payload : {
+                loser
+            }
+        }))
+        this.player2?.sendMessage(JSON.stringify({
+            type : "resign",
+            payload : {
+                loser
+            }
+        }))
+        this.gameBoard.destroy();
+    }
+
+    offerDraw (user : User) {
+        if (user.getUsername() === this.player1?.getUsername()) {
+            this.player2?.sendMessage(JSON.stringify({
+                type : "draw_offered",
+                payload : {
+                    username : this.player1.getUsername()
+                }
+            }))
+        }
+        else {
+            this.player1?.sendMessage(JSON.stringify({
+                type : "draw_offered",
+                payload : {
+                    username : this.player2?.getUsername()
+                }
+            }))
+        }
+    }
+
+    sendDraw () {
+        this.player1?.sendMessage(JSON.stringify({
+            type : "draw"
+        }))
+        this.player2?.sendMessage(JSON.stringify({
+            type : "draw"
+        }))
+        this.gameBoard.destroy()
+    }
+
+    sendMessage (payload : {username : string, message : string}) {
+        this.player1?.sendMessage(JSON.stringify({
+            type : "message_delivered",
+            payload
+        }))
+        this.player2?.sendMessage(JSON.stringify({
+            type : "message_delivered",
+            payload
+        }))
     }
 }

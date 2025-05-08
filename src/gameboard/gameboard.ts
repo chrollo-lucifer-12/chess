@@ -131,6 +131,14 @@ export class Gameboard {
         }
     }
 
+    getBoard() {
+        let cells = [];
+        for (let cell of this.grid) {
+            cells.push({coords : {x : cell.getCoords().x, y : cell.getCoords().y}, symbol : cell.getPiece()?.symbol});
+        }
+        return cells;
+    }
+
     isCheck(color: "b" | "w") {
         let kingCell: GameBoardCell;
         let oppositeColor = color === "b" ? "w" : "b"

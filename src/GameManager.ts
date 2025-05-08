@@ -46,8 +46,16 @@ export class GameManager {
                         console.log(red("starting new game") + bold(user.getUsername() + " " + "vs" + " " + this.pendingUser.getUsername()));
                         const game = new Game(this.pendingUser, user, 10,10)
                         const newGameId = crypto.randomUUID()
-                        console.log(newGameId);
+                        user.sendMessage(JSON.stringify({
+                            type : "gameId",
+                            gameId : newGameId
+                        }))
+                        this.pendingUser.sendMessage(JSON.stringify({
+                            type : "gameId",
+                            gameId : newGameId
+                        }))
                         this.games.set(newGameId,game);
+                        this.pendingUser = null
                     }
                     else {
                         this.pendingUser = user
@@ -55,10 +63,50 @@ export class GameManager {
                     break
                 }
                 case "make_move" : {
+                    console.log("move made")
                     for (let [k,v] of this.games) {
                         if (k===message.gameId) {
+                            console.log(message.move);
                             v.makeMove(user, message.move);
                             break;
+                        }
+                    }
+                    break
+                }
+                case "resign" : {
+                    for (let [k,v] of this.games) {
+                        if (k===message.gameId) {
+                            v.sendResign(user.getUsername())
+                            break;
+                        }
+                    }
+                    break
+                }
+                case "draw" : {
+                    for (let [k,v] of this.games) {
+                        if (k===message.gameId) {
+                            v.offerDraw(user)
+                            break;
+                        }
+                    }
+                    break
+                }
+                case "draw_result" : {
+                    if (message.result) {
+                        for (let [k,v] of this.games) {
+                            if (k===message.gameId) {
+                                v.sendDraw();
+                                break
+                            }
+                        }
+                    }
+                    break
+                }
+                case "send_message" : {
+                    for (let [k,v] of this.games) {
+                        if (k===message.gameId) {
+                           v.sendMessage({username : user.getUsername(), message : message.message})
+                            break
                         }
                     }
                     break

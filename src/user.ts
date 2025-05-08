@@ -1,9 +1,6 @@
 import {WebSocket} from "ws"
 
 export class User {
-
-
-
     constructor(private ws : WebSocket, private userId : string, private username : string, private color : "b" | "w" | undefined) {
 
     }

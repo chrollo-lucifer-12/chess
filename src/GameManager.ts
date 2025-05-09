@@ -1,7 +1,6 @@
 import {Game} from "./Game";
 import {User} from "./user";
 import {blue, red, bold} from "colorette"
-import axios from "axios"
 import dotenv from "dotenv"
 dotenv.config();
 
@@ -29,29 +28,24 @@ export class GameManager {
     private initHandler (user : User) {
         user.getSocket().addEventListener("message", async (e) => {
             const message = JSON.parse(e.data.toString())
-           // const gameId = message.gameId
             switch (message.type) {
                 case "join_game" : {
                     if (message.gameId) {
-                      //  console.log(message.gameId);
                         const game = this.games.get(message.gameId);
-                        if (game?.getPlayer1() === null) {
-                            game.setPlayer1(user)
-                            return
-                        }
-                        if (game?.getPlayer2() === null) {
-                            game.setPlayer2(user);
-                            return;
-                        }
+                        if (!game) return;
+                        game.addObserver(user);
+                        user.sendMessage(JSON.stringify({
+                            type : "update",
+                            board : game.getGameBoard().getBoard()
+                        }))
                         return;
                     }
                     if (this.pendingUser) {
-                        console.log(red("starting new game") + bold(user.getUsername() + " " + "vs" + " " + this.pendingUser.getUsername()));
                         const game = new Game(this.pendingUser, user, 600,600)
                         const newGameId = crypto.randomUUID()
-                        await axios.post(`${process.env.NEXT_BACKEND_URL}/game/add`, {
-                            gameId : newGameId
-                        });
+                        // await axios.post(`${process.env.NEXT_BACKEND_URL}/game/add`, {
+                        //     gameId : newGameId
+                        // });
                         user.sendMessage(JSON.stringify({
                             type : "gameId",
                             gameId : newGameId
@@ -123,14 +117,13 @@ export class GameManager {
             for (let [k,v] of this.games) {
                 if (v.getPlayer1()?.getSocket() === user.getSocket()) {
                     v.setPlayer1(null);
-                    console.log(user.getUsername() + "disconnected")
                     break;
                 }
                 if (v.getPlayer2()?.getSocket() === user.getSocket()) {
                     v.setPlayer2(null);
-                    console.log(user.getUsername() + "disconnected")
                     break
                 }
+                v.observers = v.observers.filter(u => u.getSocket() !== user.getSocket());
             }
             this.users = this.users.filter(u => u.getSocket() !== user.getSocket());
         })

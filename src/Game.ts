@@ -1,7 +1,6 @@
 import {User} from "./user";
 import {Gameboard} from "./gameboard/gameboard"
 import {Coords} from "./types";
-import axios from "axios"
 import dotenv from "dotenv"
 dotenv.config();
 
@@ -10,9 +9,11 @@ export class Game {
     private player2: User | null
     private player1Time: number
     private player2Time: number
+    public observers : User[]
     private gameBoard: Gameboard
 
     constructor(player1: User, player2: User, player1Time: number, player2Time: number) {
+        this.observers = []
         this.player1 = player1
         this.player2 = player2
         this.player1Time = player1Time
@@ -36,6 +37,14 @@ export class Game {
         }))
     }
 
+    getGameBoard () {
+        return this.gameBoard;
+    }
+
+    addObserver (user : User) {
+        this.observers.push(user);
+    }
+
     setPlayer1(user : User | null) {
         if (user) {
             console.log(user.getUsername() + "reconnected")
@@ -56,10 +65,6 @@ export class Game {
         else {
             this.player2 = null
         }
-    }
-
-    setUpBoard (previousMoves: { from: Coords; to: Coords; piece: {symbol :string, id : string} }[]) {
-        this.gameBoard.setUpBoardManually(previousMoves)
     }
 
     getPlayer1 () {
@@ -87,22 +92,21 @@ export class Game {
         if (!success) return;
         this.gameBoard.printBoard();
         this.sendMove(move, capturedPiece, piece!, isCastling)
-        await axios.post(`${process.env.NEXT_BACKEND_URL}/move/add`, {
-            gameId,
-            username : player.getUsername(),
-          from :  move.from,
-            to :move.to
-        })
+        // await axios.post(`${process.env.NEXT_BACKEND_URL}/move/add`, {
+        //     gameId,
+        //     username : player.getUsername(),
+        //   from :  move.from,
+        //     to :move.to
+        // })
     }
 
-     coordsToAlgebraic(x: number, y: number ): string {
+    coordsToAlgebraic(x: number, y: number ): string {
         const file = String.fromCharCode(97 + x);
         const rank = 8 - y;
         return `${file}${rank}`;
     }
 
-     sendMove(move: { from: Coords, to: Coords }, capturedPiece : string | null | undefined, piece : string, isCastling : boolean | undefined) {
-
+    sendMove(move: { from: Coords, to: Coords }, capturedPiece : string | null | undefined, piece : string, isCastling : boolean | undefined) {
         const toSquare = this.coordsToAlgebraic(move.to.x, move.to.y);
         const pieceLetter = piece.toUpperCase() === 'P' ? '' : piece.toUpperCase();
         const captureMarker = capturedPiece ? 'x' : '';
@@ -130,8 +134,16 @@ export class Game {
                 currentTurn : this.gameBoard.getCurrentTurn()
             }
         }))
+        this.notifyObservers()
+    }
 
-
+    notifyObservers () {
+        this.observers.map((observer) => {
+            observer.sendMessage(JSON.stringify({
+                type : "update",
+                board : this.gameBoard.getBoard(),
+            }))
+        })
     }
 
     sendStalemate() {
@@ -141,6 +153,12 @@ export class Game {
         this.player2?.sendMessage(JSON.stringify({
             type: "stalemate",
         }))
+        this.observers.map((observer) => {
+            observer.sendMessage(JSON.stringify({
+                type : "observer_game_over",
+                result : "stalemate"
+            }))
+        })
         this.gameBoard.destroy();
     }
 
@@ -157,6 +175,12 @@ export class Game {
                 winner
             }
         }))
+        this.observers.map((observer) => {
+            observer.sendMessage(JSON.stringify({
+                type : "observer_game_over",
+                winner
+            }))
+        })
         this.gameBoard.destroy();
     }
 
@@ -173,6 +197,13 @@ export class Game {
                 loser
             }
         }))
+        this.observers.map((observer) => {
+            observer.sendMessage(JSON.stringify({
+                type : "observer_game_over",
+                result : "resign",
+                loser
+            }))
+        })
         this.gameBoard.destroy();
     }
 
@@ -202,6 +233,12 @@ export class Game {
         this.player2?.sendMessage(JSON.stringify({
             type : "draw"
         }))
+        this.observers.map((observer) => {
+            observer.sendMessage(JSON.stringify({
+                type : "observer_game_over",
+                result : "draw"
+            }))
+        })
         this.gameBoard.destroy()
     }
 

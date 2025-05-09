@@ -1,6 +1,7 @@
 import {WebSocketServer} from "ws"
 import {GameManager} from "./GameManager"
 import {User} from "./user";
+require("./worker")
 
 const gameManager = new GameManager()
 

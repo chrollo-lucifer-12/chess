@@ -1,6 +1,7 @@
 import {Game} from "./Game";
 import {User} from "./user";
 import {blue, red, bold} from "colorette"
+import {addJobs} from "./queue"
 import dotenv from "dotenv"
 dotenv.config();
 
@@ -43,9 +44,6 @@ export class GameManager {
                     if (this.pendingUser) {
                         const game = new Game(this.pendingUser, user, 600,600)
                         const newGameId = crypto.randomUUID()
-                        // await axios.post(`${process.env.NEXT_BACKEND_URL}/game/add`, {
-                        //     gameId : newGameId
-                        // });
                         user.sendMessage(JSON.stringify({
                             type : "gameId",
                             gameId : newGameId
@@ -55,6 +53,7 @@ export class GameManager {
                             gameId : newGameId
                         }))
                         this.games.set(newGameId,game);
+                        await addJobs({type : "game", gameId : newGameId, player1 : {username : game.getPlayer1()?.getUsername(), color : game.getPlayer1()?.getColor()}, player2  : {username : game.getPlayer2()?.getUsername(), color : game.getPlayer2()?.getColor()}})
                         this.pendingUser = null
                     }
                     else {

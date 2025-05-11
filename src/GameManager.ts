@@ -42,8 +42,8 @@ export class GameManager {
                         return;
                     }
                     if (this.pendingUser) {
-                        const game = new Game(this.pendingUser, user, 600,600)
                         const newGameId = crypto.randomUUID()
+                        const game = new Game(this.pendingUser, user, 600,600,newGameId);
                         user.sendMessage(JSON.stringify({
                             type : "gameId",
                             gameId : newGameId

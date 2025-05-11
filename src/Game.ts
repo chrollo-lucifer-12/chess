@@ -1,8 +1,7 @@
 import {User} from "./user";
 import {Gameboard} from "./gameboard/gameboard"
 import {Coords} from "./types";
-import dotenv from "dotenv"
-dotenv.config();
+import {addJobs} from "./queue"
 
 export class Game {
     private player1: User | null
@@ -11,9 +10,13 @@ export class Game {
     private player2Time: number
     public observers : User[]
     private gameBoard: Gameboard
+    private turnNumber : number
+    private gameId : string
 
-    constructor(player1: User, player2: User, player1Time: number, player2Time: number) {
+    constructor(player1: User, player2: User, player1Time: number, player2Time: number, gameId : string) {
         this.observers = []
+        this.gameId = gameId
+        this.turnNumber = 1
         this.player1 = player1
         this.player2 = player2
         this.player1Time = player1Time
@@ -75,11 +78,11 @@ export class Game {
         return this.player2
     }
 
-    async makeMove(player: User, move: { from: Coords, to: Coords }, gameId : string) {
+     async makeMove(player: User, move: { from: Coords, to: Coords }, gameId : string) {
         if (this.gameBoard.getCurrentTurn() !== player.getColor()) {
             return;
         }
-        const {success, capturedPiece, piece, isCastling} = this.gameBoard.move(move.from, move.to);
+        const {success, capturedPiece, piece, isCastling, moveType} = this.gameBoard.move(move.from, move.to);
         if (this.gameBoard.isCheckMate()) {
             const winner = this.gameBoard.getCurrentTurn() === "w" ? "b" : "w"
             this.sendDefeat(winner)
@@ -92,12 +95,8 @@ export class Game {
         if (!success) return;
         this.gameBoard.printBoard();
         this.sendMove(move, capturedPiece, piece!, isCastling)
-        // await axios.post(`${process.env.NEXT_BACKEND_URL}/move/add`, {
-        //     gameId,
-        //     username : player.getUsername(),
-        //   from :  move.from,
-        //     to :move.to
-        // })
+         await addJobs({type : "move", piece, from : move.from, to : move.to, gameId, moveType , turnNumber : this.turnNumber })
+         this.turnNumber++;
     }
 
     coordsToAlgebraic(x: number, y: number ): string {
@@ -146,7 +145,7 @@ export class Game {
         })
     }
 
-    sendStalemate() {
+   async sendStalemate() {
         this.player1?.sendMessage(JSON.stringify({
             type: "stalemate",
         }))
@@ -159,10 +158,11 @@ export class Game {
                 result : "stalemate"
             }))
         })
+       await addJobs({type : "game_over", result : "stalemate", game_id : this.gameId})
         this.gameBoard.destroy();
     }
 
-    sendDefeat(winner : string) {
+   async sendDefeat(winner : string) {
         this.player1?.sendMessage(JSON.stringify({
             type : "game_over",
             payload : {
@@ -181,10 +181,11 @@ export class Game {
                 winner
             }))
         })
+        await addJobs({type : "game_over", result : "checkmate", winner, game_id : this.gameId})
         this.gameBoard.destroy();
     }
 
-    sendResign (loser : string) {
+   async sendResign (loser : string) {
         this.player1?.sendMessage(JSON.stringify({
             type : "resign",
             payload : {
@@ -204,6 +205,7 @@ export class Game {
                 loser
             }))
         })
+       await addJobs({type : "game_over", result : "resign", loser, game_id : this.gameId})
         this.gameBoard.destroy();
     }
 
@@ -226,7 +228,7 @@ export class Game {
         }
     }
 
-    sendDraw () {
+   async sendDraw () {
         this.player1?.sendMessage(JSON.stringify({
             type : "draw"
         }))
@@ -239,6 +241,7 @@ export class Game {
                 result : "draw"
             }))
         })
+       await addJobs({type : "game_over", result : "draw", game_id : this.gameId})
         this.gameBoard.destroy()
     }
 

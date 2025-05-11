@@ -9,5 +9,6 @@ const myQueue = new Queue("chess-queue", {
 });
 
 export async function addJobs(job : any) {
-    await myQueue.add('chess-job', job);
+    console.log("job added", job.type);
+    await myQueue.add('chess-job', job, {removeOnComplete : true});
 }
